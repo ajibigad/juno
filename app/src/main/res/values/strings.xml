@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Juno</string>
+    <string name="title_activity_main">Juno</string>
+    <string name="title_activity_alert_screamer">AlertScreamerActivity</string>
+</resources>
