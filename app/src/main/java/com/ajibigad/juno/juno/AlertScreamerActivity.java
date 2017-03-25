@@ -2,18 +2,18 @@ package com.ajibigad.juno.juno;
 
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.hardware.fingerprint.FingerprintManager;
+import android.media.AudioAttributes;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
@@ -22,6 +22,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.ajibigad.juno.juno.database.AlertRepository;
 
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
@@ -45,7 +47,12 @@ public class AlertScreamerActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private KeyStore mKeyStore;
     private KeyGenerator mKeyGenerator;
-    private SharedPreferences mSharedPreferences;
+    private static String TAG = AlertScreamerActivity.class.getSimpleName();
+
+    private static final String SECRET_MESSAGE = "Gidi juno secret ise";
+    static final String DEFAULT_KEY_NAME = "nomo_juno__key";
+
+    private static final String DIALOG_FRAGMENT_TAG = "fingerprintFragment";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +69,21 @@ public class AlertScreamerActivity extends AppCompatActivity {
         String alertMessage = (String) getIntent().getExtras().get("alertMessage");
         textView.setText(alertMessage);
 
-        mediaPlayer = MediaPlayer.create(AlertScreamerActivity.this, R.raw.alert);
-        mediaPlayer.start();
+        fingerprintSetup();
+
+//        mediaPlayer = MediaPlayer.create(AlertScreamerActivity.this, R.raw.alert);
+//        mediaPlayer.setLooping(true);
+//        mediaPlayer.start();
+
+        Uri ringtoneUri = Uri.parse("android.resource://com.ajibigad.juno.juno/" +R.raw.alert);
+        Ringtone ringtone = RingtoneManager.getRingtone(this, ringtoneUri);
+        AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build();
+        ringtone.setAudioAttributes(audioAttributes);
+        ringtone.play();
+        Log.i(TAG, "Playing ringtone");
     }
 
-    private void fingerprintSetup(){
+    private void fingerprintSetup() {
         try {
             mKeyStore = KeyStore.getInstance("AndroidKeyStore");
         } catch (KeyStoreException e) {
@@ -78,13 +95,10 @@ public class AlertScreamerActivity extends AppCompatActivity {
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Failed to get an instance of KeyGenerator", e);
         }
+
         Cipher defaultCipher;
-        //Cipher cipherNotInvalidated;
         try {
             defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7);
-            cipherNotInvalidated = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
                     + KeyProperties.BLOCK_MODE_CBC + "/"
                     + KeyProperties.ENCRYPTION_PADDING_PKCS7);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
@@ -94,13 +108,7 @@ public class AlertScreamerActivity extends AppCompatActivity {
         Context context = AlertScreamerActivity.this;
         KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
         FingerprintManager fingerprintManager = (FingerprintManager) context.getSystemService(FINGERPRINT_SERVICE);
-        Button stopScreamBtn = (Button) findViewById(R.id.stop_scream_btn);
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//            stopScreamBtn.setOnClickListener(
-//                    new StopScreamButtonClickListener(cipherNotInvalidated,
-//                            KEY_NAME_NOT_INVALIDATED));
-//        }
+        Button stopScreamBtn = (Button) findViewById(R.id.stopScreamBtn);
 
         if (!keyguardManager.isKeyguardSecure()) {
             // Show a message that the user hasn't set up a fingerprint or lock screen.
@@ -124,10 +132,8 @@ public class AlertScreamerActivity extends AppCompatActivity {
             return;
         }
         createKey(DEFAULT_KEY_NAME, true);
-        createKey(KEY_NAME_NOT_INVALIDATED, false);
-        stopScreamBtn.setEnabled(true);
         stopScreamBtn.setOnClickListener(
-                new StopScreenButtonClickListener(defaultCipher, DEFAULT_KEY_NAME));
+                new StopScreamButtonClickListener(defaultCipher, DEFAULT_KEY_NAME));
     }
 
     /**
@@ -154,54 +160,49 @@ public class AlertScreamerActivity extends AppCompatActivity {
     }
 
     /**
-     * Proceed the purchase operation
+     * Proceed the stop scream operation
      *
-     * @param withFingerprint {@code true} if the purchase was made by using a fingerprint
      * @param cryptoObject the Crypto object
      */
-    public void onAuthenticated(boolean withFingerprint,
-                            @Nullable FingerprintManager.CryptoObject cryptoObject) {
-        if (withFingerprint) {
-            // If the user has authenticated with fingerprint, verify that using cryptography and
-            // then show the confirmation message.
-            assert cryptoObject != null;
-            tryEncrypt(cryptoObject.getCipher());
-        } else {
-            // Authentication happened with backup password. Just show the confirmation message.
-            showConfirmation(null);
-        }
+    public void onAuthenticated(@Nullable FingerprintManager.CryptoObject cryptoObject) {
+        // If the user has authenticated with fingerprint, verify that using cryptography and
+        // then show the confirmation message.
+        assert cryptoObject != null;
+        tryEncrypt(cryptoObject.getCipher());
     }
 
     // Show confirmation, if fingerprint was used show crypto information.
     private void showConfirmation(byte[] encrypted) {
-        findViewById(R.id.confirmation_message).setVisibility(View.VISIBLE);
         if (encrypted != null) {
-            TextView v = (TextView) findViewById(R.id.encrypted_message);
-            v.setVisibility(View.VISIBLE);
-            v.setText(Base64.encodeToString(encrypted, 0 /* flags */));
+            Toast.makeText(this, Base64.encodeToString(encrypted, 0 /* flags */), Toast.LENGTH_LONG).show();
         }
     }
 
     /**
-     * Tries to encrypt some data with the generated key in {@link #createKey} which is
+     * Tries to encrypt some data with the generated key in {@link #createKey} which
      * only works if the user has just authenticated via fingerprint.
      */
     private void tryEncrypt(Cipher cipher) {
         try {
             byte[] encrypted = cipher.doFinal(SECRET_MESSAGE.getBytes());
             showConfirmation(encrypted);
+            postAuthentication();
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             Toast.makeText(this, "Failed to encrypt the data with the generated key. "
-                    + "Retry the purchase", Toast.LENGTH_LONG).show();
+                    + "Retry the operation", Toast.LENGTH_LONG).show();
             Log.e(TAG, "Failed to encrypt the data with the generated key." + e.getMessage());
         }
+    }
+
+    private void postAuthentication(){
+        //delete the alert and create the next trigger
     }
 
     /**
      * Creates a symmetric key in the Android Key Store which can only be used after the user has
      * authenticated with fingerprint.
      *
-     * @param keyName the name of the key to be created
+     * @param keyName                          the name of the key to be created
      * @param invalidatedByBiometricEnrollment if {@code false} is passed, the created key will not
      *                                         be invalidated even if a new fingerprint is enrolled.
      *                                         The default value is {@code true}, so passing
@@ -209,7 +210,6 @@ public class AlertScreamerActivity extends AppCompatActivity {
      *                                         (the key will be invalidated if a new fingerprint is
      *                                         enrolled.). Note that this parameter is only valid if
      *                                         the app works on Android N developer preview.
-     *
      */
     public void createKey(String keyName, boolean invalidatedByBiometricEnrollment) {
         // The enrolling flow for fingerprint. This is where you ask the user to set up fingerprint
@@ -257,30 +257,18 @@ public class AlertScreamerActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View view) {
-            findViewById(R.id.confirmation_message).setVisibility(View.GONE);
-            findViewById(R.id.encrypted_message).setVisibility(View.GONE);
-
             // Set up the crypto object for later. The object will be authenticated by use
             // of the fingerprint.
             if (initCipher(mCipher, mKeyName)) {
-
-                // Show the fingerprint dialog. The user has the option to use the fingerprint with
-                // crypto, or you can fall back to using a server-side verified password.
+                // Show the fingerprint dialog. The user has the option to use the fingerprint with crypto
                 FingerprintAuthenticationDialogFragment fragment
                         = new FingerprintAuthenticationDialogFragment();
                 fragment.setCryptoObject(new FingerprintManager.CryptoObject(mCipher));
                 fragment.show(getFragmentManager(), DIALOG_FRAGMENT_TAG);
             } else {
                 // This happens if the lock screen has been disabled or or a fingerprint got
-                // enrolled. Thus show the dialog to authenticate with their password first
-                // and ask the user if they want to authenticate with fingerprints in the
-                // future
-                FingerprintAuthenticationDialogFragment fragment
-                        = new FingerprintAuthenticationDialogFragment();
-                fragment.setCryptoObject(new FingerprintManager.CryptoObject(mCipher));
-                fragment.setStage(
-                        FingerprintAuthenticationDialogFragment.Stage.NEW_FINGERPRINT_ENROLLED);
-                fragment.show(getFragmentManager(), DIALOG_FRAGMENT_TAG);
+                // enrolled.
+                Toast.makeText(AlertScreamerActivity.this, "Either Lock screen has been disabled or new fingerprint has been enrolled", Toast.LENGTH_LONG).toString();
             }
         }
     }

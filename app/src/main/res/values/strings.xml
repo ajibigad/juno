@@ -2,4 +2,22 @@
     <string name="app_name">Juno</string>
     <string name="title_activity_main">Juno</string>
     <string name="title_activity_alert_screamer">AlertScreamerActivity</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="fingerprint_description">Confirm fingerprint to continue</string>
+    <string name="fingerprint_hint">Touch sensor</string>
+    <string name="fingerprint_not_recognized">Fingerprint not recognized. Try again</string>
+    <string name="fingerprint_success">Fingerprint recognized</string>
+    <string name="new_fingerprint_enrolled_description">A new fingerprint was added to this device.</string>
+    <string name="use_fingerprint_to_authenticate_title">Use fingerprint to authenticate</string>
+    <string name="use_fingerprint_to_authenticate_key" >use_fingerprint_to_authenticate_key</string>
+    <string name="description_fingerprint_icon">Fingerprint icon</string>
+    <string name="stop_scream">Stop Scream</string>
+    <string name="permision_available_wake_lock">WAKE LOCK Permission has been granted.</string>
+    <string name="permision_available_fingeprint">FINGERPRINT Permissions have been granted.</string>
+    <string name="permissions_not_granted">Permissions were not granted.</string>
+    <string name="permission_wake_lock_rationale">Wake lock permission is needed to ring alarm even when phone is locked.</string>
+    <string name="permission_fingerprint_rationale">Fingerprint permission is needed to stop the alarm when triggered.</string>
 </resources>

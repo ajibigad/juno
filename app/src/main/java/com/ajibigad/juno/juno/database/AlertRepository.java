@@ -7,13 +7,14 @@ import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 
 /**
  * Created by Julius on 28/02/2017.
  */
 public class AlertRepository {
 
-    public Realm realm;
+    private Realm realm;
 
     public AlertRepository(){
         this.realm = Realm.getDefaultInstance();
@@ -33,7 +34,7 @@ public class AlertRepository {
         }
         if(!isExist(alert)){
             Number currentMaxID = realm.where(Alert.class).max(AlertContract.ID);
-            int nextID = currentMaxID == null ? 1 : currentMaxID.intValue();
+            int nextID = currentMaxID == null ? 1 : currentMaxID.intValue() + 1;
             alert.setId(nextID);
         }
         realm.copyToRealmOrUpdate(alert);
@@ -47,7 +48,7 @@ public class AlertRepository {
         return realm.where(Alert.class).equalTo(AlertContract.ID, alert.getId()).findFirst() != null;
     }
 
-    public List<Alert> findAll(){
+    public RealmResults<Alert> findAll(){
         return realm.where(Alert.class).findAll();
     }
 
