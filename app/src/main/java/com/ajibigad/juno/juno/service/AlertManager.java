@@ -48,6 +48,7 @@ public class AlertManager {
             alarmIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
 
             if(nextAlert.isRepeat()){
+                // use alarmMgr.setInexactRepeating for snoozing and daily alarms
                 if(nextAlert.getTriggerTime().after(now)){
                     triggerAtMillis = nextAlert.getTriggerTime().getTime();
                     nextAlert.setNextTriggerTime(nextAlert.getTriggerTime());

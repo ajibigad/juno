@@ -23,5 +23,17 @@
         android:textStyle="bold"
         android:textAlignment="center"/>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CLICK TO STOP SCREAMING"
+        android:textStyle="bold"
+        android:textSize="30sp"
+        android:textColor="#ffffff"
+        android:id="@+id/stopScreamBtn"
+        android:background="@color/Transparent"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"/>
+
 
 </RelativeLayout>
