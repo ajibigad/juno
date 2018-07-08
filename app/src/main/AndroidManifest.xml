@@ -32,8 +32,8 @@
 
         <activity
             android:name=".AlertScreamerActivity"
-            android:label="@string/title_activity_alert_screamer"
             android:theme="@style/AppTheme.NoActionBar"></activity>
+        <!--android:label="@string/title_activity_alert_screamer"-->
     </application>
 
 </manifest>

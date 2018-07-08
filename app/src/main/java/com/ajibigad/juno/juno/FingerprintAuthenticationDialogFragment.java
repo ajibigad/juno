@@ -20,6 +20,7 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +28,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.ajibigad.juno.juno.utils.FingerPrintUtils;
 
 /**
  * A dialog which uses fingerprint APIs to authenticate the user
@@ -64,7 +67,6 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         });
 
         mFingerprintContent = v.findViewById(R.id.fingerprint_container);
-        ;
 
         mFingerprintUiHelper = new FingerprintUiHelper(
                 mActivity.getSystemService(FingerprintManager.class),
@@ -73,9 +75,9 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
         mCancelButton.setText(R.string.cancel);
         mFingerprintContent.setVisibility(View.VISIBLE);
 
-        if (!mFingerprintUiHelper.isFingerprintAuthAvailable()) {
+        if (!FingerPrintUtils.isFingerprintAuthenticationAvailable(getContext())) {
             //use lock screen
-            Toast.makeText(mActivity, "Fingerprint authentication is not available on your device", Toast.LENGTH_LONG).show();
+            onError("Fingerprint authentication is not available on your device");
             dismiss();
         }
         return v;
@@ -84,7 +86,7 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
     @Override
     public void onResume() {
         super.onResume();
-        mFingerprintUiHelper.startListening(mCryptoObject);
+        mFingerprintUiHelper.startListening(getContext(), mCryptoObject);
     }
 
     @Override
@@ -107,16 +109,15 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
     }
 
     @Override
-    public void onAuthenticated() {
-        // Callback from FingerprintUiHelper. Let the activity know that authentication was
-        // successful.
+    public void onAuthenticated(@Nullable FingerprintManager.CryptoObject cryptoObject) {
         mActivity.onAuthenticated(mCryptoObject);
         dismiss();
     }
 
     @Override
-    public void onError() {
-        Toast.makeText(mActivity, "Fingerprint authentication failed", Toast.LENGTH_LONG).show();
+    public void onError(String errorMessage) {
+        Toast.makeText(mActivity, errorMessage, Toast.LENGTH_LONG).show();
+        dismiss();
     }
 
     /**

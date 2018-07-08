@@ -16,10 +16,14 @@
 
 package com.ajibigad.juno.juno;
 
+import android.content.Context;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.CancellationSignal;
+import android.support.annotation.Nullable;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.ajibigad.juno.juno.utils.FingerPrintUtils;
 
 /**
  * Small helper class to manage text/icon around fingerprint authentication UI.
@@ -48,21 +52,12 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
         mCallback = callback;
     }
 
-    public boolean isFingerprintAuthAvailable() {
-        // The line below prevents the false positive inspection from Android Studio
-        // noinspection ResourceType
-        return mFingerprintManager.isHardwareDetected()
-                && mFingerprintManager.hasEnrolledFingerprints();
-    }
-
-    public void startListening(FingerprintManager.CryptoObject cryptoObject) {
-        if (!isFingerprintAuthAvailable()) {
+    public void startListening(Context context, FingerprintManager.CryptoObject cryptoObject) {
+        if (!FingerPrintUtils.isFingerprintAuthenticationAvailable(context)) {
             return;
         }
         mCancellationSignal = new CancellationSignal();
         mSelfCancelled = false;
-        // The line below prevents the false positive inspection from Android Studio
-        // noinspection ResourceType
         mFingerprintManager
                 .authenticate(cryptoObject, mCancellationSignal, 0 /* flags */, this, null);
         mIcon.setImageResource(R.drawable.ic_fp_40px);
@@ -77,21 +72,23 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
     }
 
     @Override
-    public void onAuthenticationError(int errMsgId, CharSequence errString) {
+    public void onAuthenticationError(int errorMessageId, final CharSequence errorMessage) {
         if (!mSelfCancelled) {
-            showError(errString);
+            showError(errorMessage);
+
+            //runs callback on the main thread
             mIcon.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mCallback.onError();
+                    mCallback.onError(errorMessage.toString());
                 }
             }, ERROR_TIMEOUT_MILLIS);
         }
     }
 
     @Override
-    public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
-        showError(helpString);
+    public void onAuthenticationHelp(int helpMessageCode, CharSequence helpMessage) {
+        showError(helpMessage);
     }
 
     @Override
@@ -101,7 +98,7 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
     }
 
     @Override
-    public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+    public void onAuthenticationSucceeded(final FingerprintManager.AuthenticationResult result) {
         mErrorTextView.removeCallbacks(mResetErrorTextRunnable);
         mIcon.setImageResource(R.drawable.ic_fingerprint_success);
         mErrorTextView.setTextColor(
@@ -111,7 +108,7 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
         mIcon.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mCallback.onAuthenticated();
+                mCallback.onAuthenticated(result.getCryptoObject());
             }
         }, SUCCESS_DELAY_MILLIS);
     }
@@ -138,8 +135,8 @@ public class FingerprintUiHelper extends FingerprintManager.AuthenticationCallba
 
     public interface Callback {
 
-        void onAuthenticated();
+        void onAuthenticated(@Nullable FingerprintManager.CryptoObject cryptoObject);
 
-        void onError();
+        void onError(String errorMessage);
     }
 }

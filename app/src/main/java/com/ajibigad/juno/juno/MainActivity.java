@@ -21,7 +21,9 @@ import android.widget.TimePicker;
 import com.ajibigad.juno.juno.database.AlertRepository;
 import com.ajibigad.juno.juno.model.Alert;
 import com.ajibigad.juno.juno.service.AlertManager;
+import com.ajibigad.juno.juno.utils.FingerPrintUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import io.realm.Realm;
@@ -93,9 +95,13 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 TimePickerDialog.OnTimeSetListener listener = new TimePickerDialog.OnTimeSetListener() {
                     @Override
                     public void onTimeSet(TimePicker timePickerView, int hourOfDay, int minute) {
+
                         now.set(Calendar.HOUR_OF_DAY, hourOfDay);
                         now.set(Calendar.MINUTE, minute);
-                        String snackMessage = String.format("Time selected: %d:%d", hourOfDay, minute);
+
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:ss");
+
+                        String snackMessage = String.format("Time selected: %s", simpleDateFormat.format(now.getTime()));
                         Snackbar.make(fView, snackMessage, Snackbar.LENGTH_LONG)
                                 .setAction("Action", null).show();
                         final Alert rAlert = new Alert();
@@ -220,6 +226,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             // Fingerprint permissions is already available,
             Log.i(TAG,
                     "FINGERPRINT permission has already been granted.");
+
+            FingerPrintUtils.confirmFingerprintAuthenticationSetup(MainActivity.this);
         }
     }
 
@@ -247,9 +255,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         Snackbar.LENGTH_SHORT).show();
 
             }
-            requestFingerPrintPermission();
-            // END_INCLUDE(permission_result)
 
+            if (FingerPrintUtils.isFingerprintAuthenticationAvailable(MainActivity.this)) {
+                requestFingerPrintPermission();
+            }
         } else if (requestCode == REQUEST_FINGERPRINT) {
             Log.i(TAG, "Received response for Fingerprint permissions request.");
 
@@ -260,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 Snackbar.make(mLayout, R.string.permision_available_fingeprint,
                         Snackbar.LENGTH_SHORT)
                         .show();
+                FingerPrintUtils.confirmFingerprintAuthenticationSetup(MainActivity.this);
             } else {
                 Log.i(TAG, "Fingerprints permissions were NOT granted.");
                 Snackbar.make(mLayout, R.string.permissions_not_granted,
